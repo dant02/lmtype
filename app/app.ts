@@ -1,12 +1,13 @@
 // tutorial using lm studio https://lmstudio.ai/docs/typescript
 
 import { Chat, LMStudioClient, FileHandle } from "@lmstudio/sdk";
+import fs from 'fs/promises';
 import readline from 'readline/promises';
 
 async function main(): Promise<void> {
     const client = new LMStudioClient();
     /* LLM */
-    var modelName = 'deepseek-r1-0528-qwen3-8b';
+    let modelName = 'deepseek-r1-0528-qwen3-8b';
     const llmodel = await client.llm.model(modelName, {
         config: {
             contextLength: 8192,
@@ -21,6 +22,7 @@ async function main(): Promise<void> {
 
     const root = 'D:\\elektlabs\\libnet\\ElektLabs.DataCore\\ElektLabs.DataCore\\';
 
+    
     const rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout,
@@ -33,20 +35,19 @@ async function main(): Promise<void> {
         files.push(h);
     };
 
-    await Prep(root + 'DBFactory.cs');
-    await Prep(root + 'DataConstants.cs');
-    await Prep(root + 'DataCoreException.cs');
-    await Prep(root + 'DataModul.cs');
-    await Prep(root + 'DataModul{T}.cs');
-    await Prep(root + 'DataModulOrder.cs');
-    await Prep(root + 'DBFactoryParameter.cs');
+
+    let d = await fs.readdir(root, { withFileTypes: true, recursive: true });
+    for (const f of d) {
+        if (!f.name.endsWith('.cs')) continue;
+        await Prep(f.parentPath + '\\' + f.name);
+    }
 
     console.info('Cnt of prepared files: ' + files.length);
 
     const r = await client.files.retrieve("Prepare documents", files, { embeddingModel: model });
 
     const chat = Chat.from([
-        { role: "user", content: "Your senior .net developer, perform code review of class DBFactory from the prepared files.", },
+        { role: "user", content: "Do you have access to source code of class ElDbConnection? It should be available in prepared files.", },
     ]);
     const formatted = await llmodel.applyPromptTemplate(chat);
     const result = await llmodel.complete(formatted, {
